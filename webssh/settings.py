@@ -43,11 +43,14 @@ define('origin', default='same', help='''Origin policy,
 separated by comma;
 '*': wildcard policy, matches any domain, allowed in debug mode only.''')
 define('wpintvl', type=int, default=0, help='Websocket ping interval')
+define('timeout', type=int, default=3, help='SSH connection timeout')
+define('delay', type=int, default=0, help='The delay to call recycle_worker')
 define('maxconn', type=int, default=20,
        help='Maximum live connections (ssh sessions) per client')
 define('font', default='', help='custom font filename')
 define('encoding', default='',
-       help="The default character encoding of ssh servers. Example: --encoding='utf-8' to solve the problem with some switches and routers")
+       help='''The default character encoding of ssh servers.
+Example: --encoding='utf-8' to solve the problem with some switches&routers''')
 define('version', type=bool, help='Show version information',
        callback=print_version)
 
@@ -192,4 +195,4 @@ def get_font_filename(font, font_dir):
 
 def check_encoding_setting(encoding):
     if encoding and not is_valid_encoding(encoding):
-        raise ValueError('Unknown character encoding.')
+        raise ValueError('Unknown character encoding {!r}.'.format(encoding))

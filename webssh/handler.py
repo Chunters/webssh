@@ -427,14 +427,18 @@ class IndexHandler(MixinHandler, tornado.web.RequestHandler):
         ]
 
         for command in commands:
-            _, stdout, _ = ssh.exec_command(command, get_pty=True)
-            data = stdout.read()
-            logging.debug('{!r} => {!r}'.format(command, data))
-            result = self.parse_encoding(data)
-            if result:
-                return result
+            try:
+                _, stdout, _ = ssh.exec_command(command, get_pty=True)
+            except paramiko.SSHException as exc:
+                logging.info(str(exc))
+            else:
+                data = stdout.read()
+                logging.debug('{!r} => {!r}'.format(command, data))
+                result = self.parse_encoding(data)
+                if result:
+                    return result
 
-        logging.warn('Could not detect the default ecnoding.')
+        logging.warning('Could not detect the default encoding.')
         return 'utf-8'
 
     def ssh_connect(self, args):
@@ -443,7 +447,7 @@ class IndexHandler(MixinHandler, tornado.web.RequestHandler):
         logging.info('Connecting to {}:{}'.format(*dst_addr))
 
         try:
-            ssh.connect(*args, timeout=6)
+            ssh.connect(*args, timeout=options.timeout)
         except socket.error:
             raise ValueError('Unable to connect to {}:{}'.format(*dst_addr))
         except paramiko.BadAuthenticationType:
@@ -511,7 +515,8 @@ class IndexHandler(MixinHandler, tornado.web.RequestHandler):
                 clients[ip] = workers
             worker.src_addr = (ip, port)
             workers[worker.id] = worker
-            self.loop.call_later(DELAY, recycle_worker, worker)
+            self.loop.call_later(options.delay or DELAY, recycle_worker,
+                                 worker)
             self.result.update(id=worker.id, encoding=worker.encoding)
 
         self.write(self.result)
